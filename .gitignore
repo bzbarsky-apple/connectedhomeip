@@ -4,6 +4,9 @@
 !.vscode/launch.json
 !.vscode/settings.json
 
+# Docker config selection
+.devcontainer/devcontainer.json
+
 # Platforms
 .DS_Store
 
