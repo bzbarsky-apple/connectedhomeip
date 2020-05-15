@@ -2,6 +2,34 @@
     "name": "CHIP Ubuntu Development Environment",
     "runArgs": ["--cap-add=SYS_PTRACE", "--security-opt", "seccomp=unconfined"],
     "mounts": [ "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind" ],
+    // This workspaceMount setup assumes that we are on a Mac and the following
+    // modifications have been made to the system:
+    //
+    // 1) A line like this has been added to /etc/exports:
+    //
+    //    /path/to/chip/repo -alldirs -mapall=501:20 localhost
+    //
+    //  where the "501:20" is the output of the command:
+    //
+    //    echo `id -u`:`id -g`
+    //
+    //  and the path probably looks like /Users/whatever/connectedhomeip or
+    //  the like.  Of course one can also share /Users in its entirety or
+    //  whatnot, but the above is the minimal sharing amount needed.
+    //
+    // 2) A line like this has been added to /etc/nfs.conf:
+    //
+    //    nfs.server.mount.require_resv_port = 0
+    //
+    // to tell nfsd to allow connections from any port.
+    //
+    // 3) "sudo nfsd restart" has been run after steps 1 and 2.
+    //
+    // The exact "o" options in the string below were copy/pasted from the
+    // internet.  The "rw" is clearly desired to have a writable mount, but I
+    // have not looked into what the other options (nolock, hard, nointr,
+    // nfsvers) actually do.
+    "workspaceMount": "type=volume,source=chip-nfs,target=${containerWorkspaceFolder},volume-driver=local,volume-opt=type=nfs,volume-opt=device=:${localWorkspaceFolder},\"volume-opt=o=addr=host.docker.internal,rw,nolock,hard,nointr,nfsvers=3\"",
     "build": {
         "dockerfile": "Dockerfile",
         "args": {
