@@ -1,0 +1,1 @@
+../third_party/connectedhomeip/src/app/plugin/core-data-model/zcl-data-model.c

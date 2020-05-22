@@ -1,0 +1,1 @@
+../third_party/connectedhomeip/src/app/plugin/binding-mock/mock.c

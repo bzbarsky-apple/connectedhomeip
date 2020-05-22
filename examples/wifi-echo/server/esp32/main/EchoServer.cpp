@@ -39,12 +39,22 @@
 #include <support/ErrorStr.h>
 #include <platform/CHIPDeviceLayer.h>
 
+#include "LEDWidget.h"
+
+extern "C" {
+#include "chip-zcl.h"
+#include "gen-cluster-id.h"
+#include "gen-types.h"
+}
+
 #define PORT CONFIG_ECHO_PORT
 
 static const char * TAG = "echo_server";
 
 using namespace ::chip;
 using namespace ::chip::Inet;
+
+extern LEDWidget statusLED;
 
 // UDP Endpoint Callbacks
 static void echo(IPEndPointBasis * endpoint, System::PacketBuffer * buffer, const IPPacketInfo * packet_info)
@@ -64,6 +74,16 @@ static void echo(IPEndPointBasis * endpoint, System::PacketBuffer * buffer, cons
                  packet_info->DestPort, static_cast<size_t>(data_len));
 
         // attempt to print the incoming message
+        ChipZclStatus_t zclStatus =
+            chipZclProcessIncoming(buffer->Start(), data_len);
+        if (zclStatus == CHIP_ZCL_STATUS_SUCCESS) {
+            ESP_LOGI(TAG, "PROCESSING SUCCESS!");
+        } else {
+            ESP_LOGI(TAG, "PROCESSING FAILURE: %d", zclStatus);
+        }
+        System::PacketBuffer::Free(buffer);
+        return;
+
         char msg_buffer[data_len + 1];
         msg_buffer[data_len] = 0; // Null-terminate whatever we received and treat like a string...
         memcpy(msg_buffer, buffer->Start(), data_len);
@@ -130,3 +150,52 @@ void startServer(UDPEndPoint * endpoint)
     }
     ESP_LOGI(TAG, "Echo Server Listening on PORT:%d...", PORT);
 }
+
+extern "C" {
+ChipZclStatus_t chipZclExternalAttributeReadCallback(uint8_t endpoint, ChipZclClusterId clusterId,
+                                                     ChipZclAttributeMetadata * attributeMetadata, uint16_t manufacturerCode,
+                                                     uint8_t * buffer, uint16_t maxReadLength)
+{
+    return CHIP_ZCL_STATUS_SUCCESS;
+}
+
+ChipZclStatus_t chipZclExternalAttributeWriteCallback(uint8_t endpoint, ChipZclClusterId clusterId,
+                                                      ChipZclAttributeMetadata * attributeMetadata, uint16_t manufacturerCode,
+                                                      uint8_t * buffer)
+{
+    return CHIP_ZCL_STATUS_SUCCESS;
+}
+ChipZclStatus_t chipZclPreAttributeChangeCallback(uint8_t endpoint, ChipZclClusterId clusterId, ChipZclAttributeId attributeId,
+                                                  uint8_t mask, uint16_t manufacturerCode, uint8_t type, uint8_t size,
+                                                  uint8_t * value)
+{
+    return CHIP_ZCL_STATUS_SUCCESS;
+}
+
+bool chipZclAttributeReadAccessCallback(uint8_t endpoint, ChipZclClusterId clusterId, uint16_t manufacturerCode,
+                                        uint16_t attributeId)
+{
+    return true;
+}
+
+bool chipZclAttributeWriteAccessCallback(uint8_t endpoint, ChipZclClusterId clusterId, uint16_t manufacturerCode,
+                                         uint16_t attributeId)
+{
+    return true;
+}
+
+void chipZclPostAttributeChangeCallback(uint8_t endpoint, ChipZclClusterId clusterId, ChipZclAttributeId attributeId, uint8_t mask,
+                                        uint16_t manufacturerCode, uint8_t type, uint8_t size, uint8_t * value)
+{
+    if (clusterId != CHIP_ZCL_CLUSTER_ON_OFF) {
+        return;
+    }
+
+    if (attributeId != CHIP_ZCL_CLUSTER_ON_OFF_SERVER_ATTRIBUTE_ON_OFF) {
+        return;
+    }
+
+    statusLED.Set(*value);
+}
+
+} // extern "C"

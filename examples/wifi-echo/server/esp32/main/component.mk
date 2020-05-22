@@ -20,3 +20,5 @@
 # (Uses default behaviour of compiling all source files in directory, adding 'include' to include path.)
 
 COMPONENT_DEPENDS := chip
+
+COMPONENT_INCLUDES += $(PROJECT_PATH)/third_party/connectedhomeip/src/app/chip-zcl $(PROJECT_PATH)/third_party/connectedhomeip/src/app/gen $(PROJECT_PATH)/third_party/connectedhomeip/src/app/plugin/cluster-server-on-off

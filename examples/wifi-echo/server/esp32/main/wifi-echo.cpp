@@ -30,6 +30,10 @@
 #include <platform/CHIPDeviceLayer.h>
 #include <support/ErrorStr.h>
 
+extern "C" {
+#include "chip-zcl.h"
+}
+
 using namespace ::chip;
 using namespace ::chip::DeviceLayer;
 
@@ -58,7 +62,7 @@ extern void startClient(void);
 
 #endif // !CONFIG_DEVICE_TYPE_ESP32_DEVKITC
 
-static LEDWidget statusLED;
+LEDWidget statusLED;
 
 const char * TAG = "wifi-echo-demo";
 
@@ -67,6 +71,8 @@ static void DeviceEventHandler(const ChipDeviceEvent * event, intptr_t arg);
 extern "C" void app_main()
 {
     ESP_LOGI(TAG, "WiFi Echo Demo!");
+
+    chipZclEndpointInit();
 
     /* Print chip information */
     esp_chip_info_t chip_info;
@@ -160,8 +166,8 @@ extern "C" void app_main()
     // Run the UI Loop
     while (true)
     {
-        statusLED.Blink(500);
-        statusLED.Animate();
+        //        statusLED.Blink(500);
+        //        statusLED.Animate();
 
         vTaskDelay(50 / portTICK_PERIOD_MS);
     }

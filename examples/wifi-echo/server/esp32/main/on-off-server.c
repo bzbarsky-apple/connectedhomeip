@@ -1,0 +1,1 @@
+../third_party/connectedhomeip/src/app/plugin/cluster-server-on-off/on-off-server.c

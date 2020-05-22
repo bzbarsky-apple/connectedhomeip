@@ -113,6 +113,7 @@ static void udp_client_task(void * pvParameters)
 // The echo client assumes the platform's networking has been setup already
 void startClient(void)
 {
+    return;
 #if CONFIG_USE_ECHO_CLIENT
     xTaskCreate(udp_client_task, "udp_client", 4096, (void *) AF_INET, 5, NULL);
 #endif
