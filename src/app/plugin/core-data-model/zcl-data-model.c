@@ -27,6 +27,8 @@
 
 #include "gen.h"
 
+#include <stdio.h>
+
 //------------------------------------------------------------------------------
 // Globals
 // This is not declared CONST in order to handle dynamic endpoint information
@@ -383,14 +385,18 @@ static ChipZclStatus_t chipZclInternalReadOrWriteAttribute(ChipZclAttributeSearc
     uint8_t i;
     uint16_t attributeOffsetIndex = 0;
 
+    fprintf(stderr, "ENDPOINT COUNT: %d\n", chipZclEndpointCount());
     for (i = 0; i < chipZclEndpointCount(); i++)
     {
+        fprintf(stderr, "HAVE ENDPOINT: %d %d\n",
+                i, chipZclEndpointArray[i].endpoint);
         if (chipZclEndpointArray[i].endpoint == attRecord->endpoint)
         {
             ChipZclEndpointType * endpointType = chipZclEndpointArray[i].endpointType;
             uint8_t clusterIndex;
             if (!chipZclEndpointIndexIsEnabled(i))
             {
+                fprintf(stderr, "DISABLED ENDPOINT: %d\n", i);
                 continue;
             }
             for (clusterIndex = 0; clusterIndex < endpointType->clusterCount; clusterIndex++)

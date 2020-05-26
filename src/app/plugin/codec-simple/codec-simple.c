@@ -26,6 +26,7 @@
 
 #include <memory.h>
 #include <stdint.h>
+#include <stdio.h>
 
 /**
  * @brief Starts the encoding process. if there is any kind of preamble of anything, this function is responsible for putting it
@@ -147,11 +148,13 @@ void chipZclDecodeZclHeader(ChipZclRawBuffer_t * buffer, ChipZclCommandContext_t
     chipZclCodecDecode(buffer, CHIP_ZCL_STRUCT_TYPE_INTEGER, &mask, sizeof(mask), NULL);
     chipZclCodecDecode(buffer, CHIP_ZCL_STRUCT_TYPE_INTEGER, &(context->endpointId), sizeof(context->endpointId), NULL);
     chipZclCodecDecode(buffer, CHIP_ZCL_STRUCT_TYPE_INTEGER, &(context->commandId), sizeof(context->commandId), NULL);
+    fprintf(stderr, "COMMAND ID: %d\n", context->commandId);
     chipZclCodecDecode(buffer, CHIP_ZCL_STRUCT_TYPE_INTEGER, &(context->direction), sizeof(context->direction), NULL);
     if (mask & 0x01)
     {
         context->clusterSpecific = true;
         chipZclCodecDecode(buffer, CHIP_ZCL_STRUCT_TYPE_INTEGER, &(context->clusterId), sizeof(context->clusterId), NULL);
+        fprintf(stderr, "CLUSTER ID: %d\n", context->clusterId);
     }
     else
     {

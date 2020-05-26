@@ -27,6 +27,8 @@
 #include "chip-zcl.h"
 #include "gen.h"
 
+#include <stdio.h>
+
 // Globals
 
 static void setOnOffHandler(const ChipZclCommandContext_t * context, bool onOff);
@@ -59,10 +61,12 @@ static bool getOnOff(ChipZclEndpointId_t endpointId)
     if (chipZclReadAttribute(endpointId, &chipZclClusterOnOffServerSpec, CHIP_ZCL_CLUSTER_ON_OFF_SERVER_ATTRIBUTE_ON_OFF, &onOff,
                              sizeof(onOff)) == CHIP_ZCL_STATUS_SUCCESS)
     {
+        fprintf(stderr, "GOT A VALUE!\n");
         return onOff;
     }
     else
     {
+        fprintf(stderr, "FAILED TO READ ATTRIBUTE!\n");
         return false;
     }
 }

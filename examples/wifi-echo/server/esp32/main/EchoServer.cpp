@@ -74,6 +74,11 @@ static void echo(IPEndPointBasis * endpoint, System::PacketBuffer * buffer, cons
                  packet_info->DestPort, static_cast<size_t>(data_len));
 
         // attempt to print the incoming message
+        fprintf(stderr, "RECEIVING: %zu ", data_len);
+        for (size_t i = 0; i < data_len; ++i) {
+            fprintf(stderr, "%d ", buffer->Start()[i]);
+        }
+        fprintf(stderr, "\n");
         ChipZclStatus_t zclStatus =
             chipZclProcessIncoming(buffer->Start(), data_len);
         if (zclStatus == CHIP_ZCL_STATUS_SUCCESS) {
@@ -187,6 +192,7 @@ bool chipZclAttributeWriteAccessCallback(uint8_t endpoint, ChipZclClusterId clus
 void chipZclPostAttributeChangeCallback(uint8_t endpoint, ChipZclClusterId clusterId, ChipZclAttributeId attributeId, uint8_t mask,
                                         uint16_t manufacturerCode, uint8_t type, uint8_t size, uint8_t * value)
 {
+    ESP_LOGI(TAG, "CALLBACK HAPPENED: %d %d!", clusterId, attributeId);
     if (clusterId != CHIP_ZCL_CLUSTER_ON_OFF) {
         return;
     }
@@ -195,6 +201,11 @@ void chipZclPostAttributeChangeCallback(uint8_t endpoint, ChipZclClusterId clust
         return;
     }
 
+    fprintf(stderr, "SETTING STATUS: %d", size);
+    for (int i = 0; i < size; ++i) {
+        fprintf(stderr, " %d", value[i]);
+    }
+    fprintf(stderr, "\n");
     statusLED.Set(*value);
 }
 
