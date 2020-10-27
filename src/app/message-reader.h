@@ -57,6 +57,11 @@ public:
     uint16_t OctetsRead() const { return Super::OctetsRead(); }
 
     /**
+     * The reader status.
+     */
+    CHIP_ERROR StatusCode() const { return Super::StatusCode(); }
+
+    /**
      * Read a cluster id.
      *
      * @param [out] cluster_id Where the cluster id goes.
@@ -64,7 +69,11 @@ public:
      * @return Whether the read succeeded.  The read can fail if there are not
      *         enough octets available.
      */
-    CHECK_RETURN_VALUE CHIP_ERROR ReadClusterId(ClusterId * cluster_id) { return Read(cluster_id); }
+    CHECK_RETURN_VALUE DataModelReader & ReadClusterId(ClusterId * cluster_id)
+    {
+        Read(cluster_id);
+        return *this;
+    }
 
     /**
      * Read an endpoint id.
@@ -74,7 +83,11 @@ public:
      * @return Whether the read succeeded.  The read can fail if there are not
      *         enough octets available.
      */
-    CHECK_RETURN_VALUE CHIP_ERROR ReadEndpointId(EndpointId * endpoint_id) { return Read(endpoint_id); }
+    CHECK_RETURN_VALUE DataModelReader & ReadEndpointId(EndpointId * endpoint_id)
+    {
+        Read(endpoint_id);
+        return *this;
+    }
 
     /**
      * Read a single octet.
@@ -86,7 +99,11 @@ public:
      *
      * @note Use of APIs that read some semantically-meaningful type is preferred.
      */
-    CHECK_RETURN_VALUE CHIP_ERROR ReadOctet(uint8_t * octet) { return Read(octet); }
+    CHECK_RETURN_VALUE DataModelReader & ReadOctet(uint8_t * octet)
+    {
+        Read(octet);
+        return *this;
+    }
 
     /**
      * Read a single 16-bit unsigned integer.
@@ -98,6 +115,10 @@ public:
      *
      * @note Use of APIs that read some semantically-meaningful type is preferred.
      */
-    CHECK_RETURN_VALUE CHIP_ERROR Read16(uint16_t * dest) { return Read(dest); }
+    CHECK_RETURN_VALUE DataModelReader & Read16(uint16_t * dest)
+    {
+        Read(dest);
+        return *this;
+    }
 };
 } // namespace chip

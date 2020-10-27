@@ -46,31 +46,16 @@ uint16_t extractApsFrame(uint8_t * buffer, uint16_t buf_length, EmberApsFrame * 
 
     // Skip first byte, because that's the always-0 frame control.
     uint8_t ignored;
-    err = reader.ReadOctet(&ignored);
-    SuccessOrExit(err);
-
-    err = reader.Read16(&outApsFrame->profileId);
-    SuccessOrExit(err);
-
-    err = reader.ReadClusterId(&outApsFrame->clusterId);
-    SuccessOrExit(err);
-
-    err = reader.ReadEndpointId(&outApsFrame->sourceEndpoint);
-    SuccessOrExit(err);
-
-    err = reader.ReadEndpointId(&outApsFrame->destinationEndpoint);
-    SuccessOrExit(err);
-
-    err = reader.Read16(&outApsFrame->options);
-    SuccessOrExit(err);
-
-    err = reader.Read16(&outApsFrame->groupId);
-    SuccessOrExit(err);
-
-    err = reader.ReadOctet(&outApsFrame->sequence);
-    SuccessOrExit(err);
-
-    err = reader.ReadOctet(&outApsFrame->radius);
+    err = reader.ReadOctet(&ignored)
+              .Read16(&outApsFrame->profileId)
+              .ReadClusterId(&outApsFrame->clusterId)
+              .ReadEndpointId(&outApsFrame->sourceEndpoint)
+              .ReadEndpointId(&outApsFrame->destinationEndpoint)
+              .Read16(&outApsFrame->options)
+              .Read16(&outApsFrame->groupId)
+              .ReadOctet(&outApsFrame->sequence)
+              .ReadOctet(&outApsFrame->radius)
+              .StatusCode();
     SuccessOrExit(err);
 
 exit:
