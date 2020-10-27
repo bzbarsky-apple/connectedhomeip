@@ -59,6 +59,11 @@ public:
     uint16_t OctetsRead() const { return static_cast<uint16_t>(mReadPtr - mBufStart); }
 
     /**
+     * The reader status.
+     */
+    CHIP_ERROR StatusCode() const { return mStatus; }
+
+    /**
      * Read a single 8-bit unsigned integer.
      *
      * @param [out] dest Where the 8-bit integer goes.
@@ -67,7 +72,7 @@ public:
      *         enough octets available.
      */
     CHECK_RETURN_VALUE
-    CHIP_ERROR Read8(uint8_t * dest) { return Read(dest); }
+    Reader& Read8(uint8_t * dest) { Read(dest); return *this; }
 
     /**
      * Read a single 16-bit unsigned integer.
@@ -78,7 +83,7 @@ public:
      *         enough octets available.
      */
     CHECK_RETURN_VALUE
-    CHIP_ERROR Read16(uint16_t * dest) { return Read(dest); }
+    Reader& Read16(uint16_t * dest) { Read(dest); return *this; }
 
     /**
      * Read a single 32-bit unsigned integer.
@@ -89,7 +94,7 @@ public:
      *         enough octets available.
      */
     CHECK_RETURN_VALUE
-    CHIP_ERROR Read32(uint32_t * dest) { return Read(dest); }
+    Reader& Read32(uint32_t * dest) { Read(dest); return *this; }
 
     /**
      * Read a single 64-bit unsigned integer.
@@ -100,24 +105,28 @@ public:
      *         enough octets available.
      */
     CHECK_RETURN_VALUE
-    CHIP_ERROR Read64(uint64_t * dest) { return Read(dest); }
+    Reader& Read64(uint64_t * dest) { Read(dest); return *this; }
 
 protected:
     template <typename T>
-    CHIP_ERROR Read(T * retval)
+    void Read(T * retval)
     {
         static_assert(CHAR_BIT == 8, "Our various sizeof checks rely on bytes and octets being the same thing");
 
         static constexpr size_t data_size = sizeof(T);
 
+        if (mStatus != CHIP_NO_ERROR) {
+            return;
+        }
+
         if (mAvailable < data_size)
         {
-            return CHIP_ERROR_BUFFER_TOO_SMALL;
+            mStatus = CHIP_ERROR_BUFFER_TOO_SMALL;
+            return;
         }
 
         Read(mReadPtr, retval);
         mAvailable = static_cast<uint16_t>(mAvailable - data_size);
-        return CHIP_NO_ERROR;
     }
 
 private:
@@ -143,6 +152,11 @@ private:
      * The number of octets we can still read starting at mReadPtr.
      */
     uint16_t mAvailable;
+
+    /**
+     * Our current status.
+     */
+    CHIP_ERROR mStatus = CHIP_NO_ERROR;
 };
 
 } // namespace LittleEndian
