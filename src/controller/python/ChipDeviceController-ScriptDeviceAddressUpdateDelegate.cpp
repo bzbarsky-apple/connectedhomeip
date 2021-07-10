@@ -17,6 +17,8 @@
 
 #include "ChipDeviceController-ScriptDeviceAddressUpdateDelegate.h"
 
+#error "THIS IS FAIL"
+
 namespace chip {
 namespace Controller {
 
