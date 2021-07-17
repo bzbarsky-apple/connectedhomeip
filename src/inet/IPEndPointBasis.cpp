@@ -907,7 +907,7 @@ CHIP_ERROR IPEndPointBasis::SendMsg(const IPPacketInfo * aPktInfo, chip::System:
     }
 
     // Send IP packet.
-    const ssize_t lenSent = sendmsg(mSocket.GetFD(), &msgHeader, 0);
+    const ssize_t lenSent = sendmsg(mSocket.GetFD(), &msgHeader, MSG_DONTWAIT);
     if (lenSent == -1)
         return chip::System::MapErrorPOSIX(errno);
     if (lenSent != aBuffer->DataLength())
