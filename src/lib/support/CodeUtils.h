@@ -28,6 +28,8 @@
 
 #ifdef __cplusplus
 
+#include <execinfo.h>
+
 #include <lib/core/CHIPConfig.h>
 #include <lib/core/CHIPError.h>
 #include <lib/support/ErrorStr.h>
@@ -494,9 +496,18 @@ inline void chipDie(void)
  *  @sa #chipDie
  *
  */
+
+inline void do_backtrace()
+{
+    void* callstack[128];
+    int frames = backtrace(callstack, 128);
+    backtrace_symbols_fd(callstack, frames, 2);
+    //    char ** strs = backtrace_symbols(callstack, frames);
+}
+
 #if CHIP_CONFIG_VERBOSE_VERIFY_OR_DIE
 #define VerifyOrDie(aCondition)                                                                                                    \
-    nlABORT_ACTION(aCondition, ChipLogDetail(Support, "VerifyOrDie failure at %s:%d: %s", __FILE__, __LINE__, #aCondition))
+    nlABORT_ACTION(aCondition, do_backtrace())
 #else // CHIP_CONFIG_VERBOSE_VERIFY_OR_DIE
 #define VerifyOrDie(aCondition) nlABORT(aCondition)
 #endif // CHIP_CONFIG_VERBOSE_VERIFY_OR_DIE
