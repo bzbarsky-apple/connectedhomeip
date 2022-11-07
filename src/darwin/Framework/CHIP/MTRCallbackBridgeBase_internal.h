@@ -45,6 +45,8 @@ typedef void (*DefaultFailureCallbackType)(void *, CHIP_ERROR);
 
 template <class T> class MTRCallbackBridge {
 public:
+    using SuccessCallbackType = T;
+
     /**
      * Run the given MTRLocalActionBlock on the Matter thread, then handle
      * converting the value produced by the success callback to the right type

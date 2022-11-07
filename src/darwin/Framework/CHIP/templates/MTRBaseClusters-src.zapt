@@ -22,6 +22,46 @@ using namespace chip::app::Clusters;
 using chip::Messaging::ExchangeManager;
 using chip::SessionHandle;
 
+template<typename SubscriptionBridgeType, typename AttributeObjCType, typename AttributeDecodableType>
+static void SubscribeAttribute(MTRSubscribeParams * _Nonnull params, MTRSubscriptionEstablishedHandler _Nullable subscriptionEstablished, void (^reportHandler)(AttributeObjCType * _Nullable value, NSError * _Nullable error), dispatch_queue_t callbackQueue, MTRBaseDevice * device, chip::EndpointId endpoint, chip::ClusterId clusterID, chip::AttributeId attributeID)
+{
+    // Make a copy of params before we go async.
+    params = [params copy];
+    __block SubscriptionBridgeType * callbackBridge = new SubscriptionBridgeType(callbackQueue,
+      device,
+      {{! This treats reportHandler as taking an id for the data.  This is
+          not great from a type-safety perspective, of course. }}
+      reportHandler,
+      ^(ExchangeManager & exchangeManager, const SessionHandle & session, Cancelable * success, Cancelable * failure) {
+          if (!params.resubscribeIfLost) {
+              // We don't support disabling auto-resubscribe.
+              return CHIP_ERROR_INVALID_ARGUMENT;
+          }
+          auto successFn = Callback<typename SubscriptionBridgeType::SuccessCallbackType>::FromCancelable(success);
+          auto successCb = successFn->mCall;
+          auto failureFn = Callback<DefaultFailureCallbackType>::FromCancelable(failure);
+          auto failureCb = failureFn->mCall;
+          auto context = successFn->mContext;
+
+          SubscriptionBridgeType * innerCallbackBridge = callbackBridge;
+          auto onReportCb = [context, successCb](const chip::app::ConcreteAttributePath & aPath, const AttributeDecodableType & aData) {
+              successCb(context, aData);
+          };
+          auto onFailureCb = [context, failureCb](const chip::app::ConcreteAttributePath * aPath, CHIP_ERROR aError) {
+              failureCb(context, aError);
+          };
+          auto onSubscriptionEstablishedCb = [context](const chip::app::ReadClient & readClient) {
+              SubscriptionBridgeType::OnSubscriptionEstablished(context);
+          };
+          return chip::Controller::SubscribeAttribute<AttributeDecodableType>(&exchangeManager, session, endpoint, clusterID, attributeID, onReportCb, onFailureCb, params.minInterval.unsignedShortValue, params.maxInterval.unsignedShortValue, onSubscriptionEstablishedCb, nullptr,
+              params.filterByFabric,
+              !params.replaceExistingSubscriptions,
+              chip::NullOptional,
+              [innerCallbackBridge](void) { delete innerCallbackBridge; }
+          );
+      }, subscriptionEstablished);
+}
+
 // NOLINTBEGIN(clang-analyzer-cplusplus.NewDeleteLeaks): Linter is unable to locate the delete on these objects.
 {{#chip_client_clusters includeAll=true}}
 @implementation MTRBaseCluster{{asUpperCamelCase name}}
@@ -184,34 +224,11 @@ using chip::SessionHandle;
 {{/if}}
 {{#if isReportableAttribute}}
 - (void) subscribe{{>attribute}}WithParams:(MTRSubscribeParams * _Nonnull)params
-subscriptionEstablished:(MTRSubscriptionEstablishedHandler _Nullable)subscriptionEstablished 
+subscriptionEstablished:(MTRSubscriptionEstablishedHandler _Nullable)subscriptionEstablished
 reportHandler:(void (^)({{asObjectiveCClass type parent.name}} * _Nullable value, NSError * _Nullable error))reportHandler
 {
-    // Make a copy of params before we go async.
-    params = [params copy];
-    __block MTR{{>attribute_data_callback_name}}CallbackSubscriptionBridge * callbackBridge = new MTR{{>attribute_data_callback_name}}CallbackSubscriptionBridge(self.callbackQueue,
-      self.device,
-      {{! This treats reportHandler as taking an id for the data.  This is
-          not great from a type-safety perspective, of course. }}
-      reportHandler,
-      ^(ExchangeManager & exchangeManager, const SessionHandle & session, Cancelable * success, Cancelable * failure) {
-          if (!params.resubscribeIfLost) {
-              // We don't support disabling auto-resubscribe.
-              return CHIP_ERROR_INVALID_ARGUMENT;
-          }
-          using TypeInfo = {{asUpperCamelCase parent.name}}::Attributes::{{asUpperCamelCase name}}::TypeInfo;
-          auto successFn = Callback<{{>attribute_data_callback_name}}Callback>::FromCancelable(success);
-          auto failureFn = Callback<DefaultFailureCallbackType>::FromCancelable(failure);
-
-          chip::Controller::{{asUpperCamelCase parent.name}}Cluster cppCluster(exchangeManager, session, self->_endpoint);
-          MTR{{>attribute_data_callback_name}}CallbackSubscriptionBridge * innerCallbackBridge = callbackBridge;
-          return cppCluster.SubscribeAttribute<TypeInfo>(successFn->mContext, successFn->mCall, failureFn->mCall, [params.minInterval unsignedShortValue], [params.maxInterval unsignedShortValue], MTR{{>attribute_data_callback_name}}CallbackSubscriptionBridge::OnSubscriptionEstablished, nil,
-              params.filterByFabric,
-              !params.replaceExistingSubscriptions,
-              chip::NullOptional,
-              [innerCallbackBridge](void) { delete innerCallbackBridge; }
-          );
-      }, subscriptionEstablished);
+    using TypeInfo = {{asUpperCamelCase parent.name}}::Attributes::{{asUpperCamelCase name}}::TypeInfo;
+    SubscribeAttribute<MTR{{>attribute_data_callback_name}}CallbackSubscriptionBridge, {{asObjectiveCClass type parent.name}}, TypeInfo::DecodableType>(params, subscriptionEstablished, reportHandler, self.callbackQueue, self.device, self->_endpoint, TypeInfo::GetClusterId(), TypeInfo::GetAttributeId());
 }
 
 + (void) read{{>attribute}}WithAttributeCache:(MTRAttributeCacheContainer *)attributeCacheContainer endpoint:(NSNumber *)endpoint  queue:(dispatch_queue_t)queue completion:(void (^)({{asObjectiveCClass type parent.name}} * _Nullable value, NSError * _Nullable error))completion
