@@ -24,15 +24,15 @@ using chip::Messaging::ExchangeManager;
 using chip::SessionHandle;
 
 template<typename BridgeType, typename DecodableAttributeType>
-class AttributeCallback : public chip::app::ReadClient::Callback
+class AttributeReportCallback : public chip::app::ReadClient::Callback
 {
 public:
-    AttributeCallback(BridgeType * _Nonnull bridge, typename BridgeType::SuccessCallbackType onAttributeReport, DefaultFailureCallbackType onError, chip::ClusterId clusterID, chip::AttributeId attributeID) :
+    AttributeReportCallback(BridgeType * _Nonnull bridge, typename BridgeType::SuccessCallbackType onAttributeReport, DefaultFailureCallbackType onError, chip::ClusterId clusterID, chip::AttributeId attributeID) :
         mBridge(bridge), mOnAttributeReport(onAttributeReport), mOnError(onError), mClusterID(clusterID), mAttributeID(attributeID),
         mBufferedReadAdapter(*this)
     {}
 
-    ~AttributeCallback() {
+    ~AttributeReportCallback() {
         // Ensure we release the ReadClient before we tear down anything else,
         // so it can call our OnDeallocatePaths properly.
         mReadClient = nullptr;
@@ -42,7 +42,7 @@ public:
 
     void AdoptReadClient(chip::Platform::UniquePtr<chip::app::ReadClient> aReadClient) { mReadClient = std::move(aReadClient); }
 
-private:
+protected:
     void OnAttributeData(const chip::app::ConcreteDataAttributePath & aPath, chip::TLV::TLVReader * apData,
                          const chip::app::StatusIB & aStatus) override
     {
@@ -88,17 +88,7 @@ private:
     }
 
     void OnDone(chip::app::ReadClient *) override {
-        // Can we check the ReadClient's IsReadType here to decide whether to
-        // delete mBridge?
-        if (mReadClient->IsSubscriptionType()) {
-            delete mBridge;
-        }
         chip::Platform::Delete(this);
-    }
-
-    void OnSubscriptionEstablished(chip::SubscriptionId aSubscriptionId) override
-    {
-        BridgeType::OnSubscriptionEstablished(mBridge);
     }
 
     // The superclass OnResubscriptionNeeded is fine for our purposes.
@@ -125,6 +115,32 @@ private:
     chip::Platform::UniquePtr<chip::app::ReadClient> mReadClient;
     // For reads, we ensure that we make only one data/error callback to our consumer.
     bool mCalledCallback = false;
+};
+
+template<typename BridgeType, typename DecodableAttributeType>
+class AttributeSubscriptionCallback : public AttributeReportCallback<BridgeType, DecodableAttributeType>
+{
+public:
+    AttributeSubscriptionCallback(BridgeType * _Nonnull bridge, typename BridgeType::SuccessCallbackType onAttributeReport, DefaultFailureCallbackType onError, chip::ClusterId clusterID, chip::AttributeId attributeID) :
+        AttributeReportCallback<BridgeType, DecodableAttributeType>(bridge, onAttributeReport, onError, clusterID, attributeID)
+    {}
+
+    ~AttributeSubscriptionCallback() {
+        // Ensure we release the ReadClient before we tear down anything else,
+        // so it can call our OnDeallocatePaths properly.
+        this->mReadClient = nullptr;
+    }
+
+private:
+    void OnSubscriptionEstablished(chip::SubscriptionId aSubscriptionId) override
+    {
+        BridgeType::OnSubscriptionEstablished(this->mBridge);
+    }
+
+    void OnDone(chip::app::ReadClient * readClient) override {
+        delete this->mBridge;
+        AttributeReportCallback<BridgeType, DecodableAttributeType>::OnDone(readClient);
+    }
 };
 
 template<typename SubscriptionBridgeType, typename AttributeObjCType, typename DecodableAttributeType>
@@ -155,7 +171,7 @@ static void SubscribeAttribute(MTRSubscribeParams * _Nonnull params, MTRSubscrip
           subscribeParams.mIsFabricFiltered = params.filterByFabric;
 
           SubscriptionBridgeType * innerCallbackBridge = callbackBridge;
-          auto callback = chip::Platform::MakeUnique<AttributeCallback<SubscriptionBridgeType, DecodableAttributeType>>(innerCallbackBridge, successCb, failureCb, clusterID, attributeID);
+          auto callback = chip::Platform::MakeUnique<AttributeSubscriptionCallback<SubscriptionBridgeType, DecodableAttributeType>>(innerCallbackBridge, successCb, failureCb, clusterID, attributeID);
           VerifyOrReturnError(callback != nullptr, CHIP_ERROR_NO_MEMORY);
 
           auto readClient =
@@ -177,6 +193,48 @@ static void SubscribeAttribute(MTRSubscribeParams * _Nonnull params, MTRSubscrip
 
           return CHIP_NO_ERROR;
       }, subscriptionEstablished);
+}
+
+template<typename ReadBridgeType, typename AttributeObjCType, typename DecodableAttributeType>
+static void ReadAttribute(MTRReadParams * _Nonnull params, void (^reportHandler)(AttributeObjCType * _Nullable value, NSError * _Nullable error), dispatch_queue_t callbackQueue, MTRBaseDevice * device, chip::EndpointId endpoint, chip::ClusterId clusterID, chip::AttributeId attributeID)
+{
+    // Make a copy of params before we go async.
+    params = [params copy];
+    __block ReadBridgeType * callbackBridge = new ReadBridgeType(callbackQueue,
+      device,
+      {{! This treats reportHandler as taking an id for the data.  This is
+          not great from a type-safety perspective, of course. }}
+      reportHandler,
+      ^(ExchangeManager & exchangeManager, const SessionHandle & session, Cancelable * success, Cancelable * failure) {
+          auto successFn = Callback<typename ReadBridgeType::SuccessCallbackType>::FromCancelable(success);
+          auto successCb = successFn->mCall;
+          auto failureFn = Callback<DefaultFailureCallbackType>::FromCancelable(failure);
+          auto failureCb = failureFn->mCall;
+
+          auto readPaths = chip::Platform::MakeUnique<chip::app::AttributePathParams>(endpoint, clusterID, attributeID);
+          VerifyOrReturnError(readPaths != nullptr, CHIP_ERROR_NO_MEMORY);
+
+          chip::app::ReadPrepareParams subscribeParams(session);
+          subscribeParams.mpAttributePathParamsList    = readPaths.get();
+          subscribeParams.mAttributePathParamsListSize = 1;
+          subscribeParams.mIsFabricFiltered = params.filterByFabric;
+
+          ReadBridgeType * innerCallbackBridge = callbackBridge;
+          auto callback = chip::Platform::MakeUnique<AttributeReportCallback<ReadBridgeType, DecodableAttributeType>>(innerCallbackBridge, successCb, failureCb, clusterID, attributeID);
+          VerifyOrReturnError(callback != nullptr, CHIP_ERROR_NO_MEMORY);
+
+          auto readClient =
+              chip::Platform::MakeUnique<chip::app::ReadClient>(chip::app::InteractionModelEngine::GetInstance(), &exchangeManager, callback->GetBufferedCallback(), chip::app::ReadClient::InteractionType::Read);
+          VerifyOrReturnError(readClient != nullptr, CHIP_ERROR_NO_MEMORY);
+
+          CHIP_ERROR err = readClient->SendRequest(subscribeParams);
+          ReturnErrorOnFailure(err);
+
+          callback->AdoptReadClient(std::move(readClient));
+          callback.release();
+
+          return CHIP_NO_ERROR;
+      });
 }
 
 // NOLINTBEGIN(clang-analyzer-cplusplus.NewDeleteLeaks): Linter is unable to locate the delete on these objects.
@@ -273,23 +331,13 @@ static void SubscribeAttribute(MTRSubscribeParams * _Nonnull params, MTRSubscrip
     {{~#if_is_fabric_scoped_struct type}}
     // Make a copy of params before we go async.
     params = [params copy];
+    {{else}}
+    MTRReadParams * params = [[MTRReadParams alloc] init];
     {{/if_is_fabric_scoped_struct~}}
-    new MTR{{>attribute_data_callback_name}}CallbackBridge(self.callbackQueue,
-      self.device,
-      {{! This treats completion as taking an id for the data.  This is
-          not great from a type-safety perspective, of course. }}
-      completion,
-      ^(ExchangeManager & exchangeManager, const SessionHandle & session, Cancelable * success, Cancelable * failure) {
-          using TypeInfo = {{asUpperCamelCase parent.name}}::Attributes::{{asUpperCamelCase name}}::TypeInfo;
-          auto successFn = Callback<{{>attribute_data_callback_name}}Callback>::FromCancelable(success);
-          auto failureFn = Callback<DefaultFailureCallbackType>::FromCancelable(failure);
-          chip::Controller::{{asUpperCamelCase parent.name}}Cluster cppCluster(exchangeManager, session, self->_endpoint);
-          return cppCluster.ReadAttribute<TypeInfo>(successFn->mContext, successFn->mCall, failureFn->mCall
-          {{~#if_is_fabric_scoped_struct type~}}
-          , params.filterByFabric
-          {{~/if_is_fabric_scoped_struct~}}
-          );
-      });
+    using TypeInfo = {{asUpperCamelCase parent.name}}::Attributes::{{asUpperCamelCase name}}::TypeInfo;
+    return ReadAttribute<MTR{{>attribute_data_callback_name}}CallbackBridge,
+                         {{asObjectiveCClass type parent.name}},
+                         TypeInfo::DecodableType>(params, completion, self.callbackQueue, self.device, self->_endpoint, TypeInfo::GetClusterId(), TypeInfo::GetAttributeId());
 }
 
 {{#if isWritableAttribute}}
