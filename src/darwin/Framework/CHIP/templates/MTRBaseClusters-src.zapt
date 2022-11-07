@@ -12,9 +12,10 @@
 #import "MTRCommandPayloadsObjc.h"
 
 #include <lib/support/CHIPListUtils.h>
+#include <lib/core/CHIPTLV.h>
 #include <platform/CHIPDeviceLayer.h>
 #include <type_traits>
-#include <controller/TypedReadCallback.h>
+#include <app/ReadClient.h>
 
 using chip::Callback::Callback;
 using chip::Callback::Cancelable;
@@ -22,7 +23,111 @@ using namespace chip::app::Clusters;
 using chip::Messaging::ExchangeManager;
 using chip::SessionHandle;
 
-template<typename SubscriptionBridgeType, typename AttributeObjCType, typename AttributeDecodableType>
+template<typename BridgeType, typename DecodableAttributeType>
+class AttributeCallback : public chip::app::ReadClient::Callback
+{
+public:
+    AttributeCallback(BridgeType * _Nonnull bridge, typename BridgeType::SuccessCallbackType onAttributeReport, DefaultFailureCallbackType onError, chip::ClusterId clusterID, chip::AttributeId attributeID) :
+        mBridge(bridge), mOnAttributeReport(onAttributeReport), mOnError(onError), mClusterID(clusterID), mAttributeID(attributeID),
+        mBufferedReadAdapter(*this)
+    {}
+
+    ~AttributeCallback() {
+        // Ensure we release the ReadClient before we tear down anything else,
+        // so it can call our OnDeallocatePaths properly.
+        mReadClient = nullptr;
+    }
+
+    chip::app::BufferedReadCallback & GetBufferedCallback() { return mBufferedReadAdapter; }
+
+    void AdoptReadClient(chip::Platform::UniquePtr<chip::app::ReadClient> aReadClient) { mReadClient = std::move(aReadClient); }
+
+private:
+    void OnAttributeData(const chip::app::ConcreteDataAttributePath & aPath, chip::TLV::TLVReader * apData,
+                         const chip::app::StatusIB & aStatus) override
+    {
+        if (mCalledCallback && mReadClient->IsReadType())
+        {
+            return;
+        }
+        mCalledCallback = true;
+
+        CHIP_ERROR err = CHIP_NO_ERROR;
+        DecodableAttributeType value;
+
+        //
+        // We shouldn't be getting list item operations in the provided path since that should be handled by the buffered read
+        // callback. If we do, that's a bug.
+        //
+        VerifyOrDie(!aPath.IsListItemOperation());
+
+        VerifyOrExit(aStatus.IsSuccess(), err = aStatus.ToChipError());
+        VerifyOrExit(aPath.mClusterId == mClusterID && aPath.mAttributeId == mAttributeID, err = CHIP_ERROR_SCHEMA_MISMATCH);
+        VerifyOrExit(apData != nullptr, err = CHIP_ERROR_INVALID_ARGUMENT);
+
+        SuccessOrExit(err = chip::app::DataModel::Decode(*apData, value));
+
+        mOnAttributeReport(mBridge, value);
+
+    exit:
+        if (err != CHIP_NO_ERROR)
+        {
+            mOnError(mBridge, err);
+        }
+    }
+
+    void OnError(CHIP_ERROR aError) override
+    {
+        if (mCalledCallback && mReadClient->IsReadType())
+        {
+            return;
+        }
+        mCalledCallback = true;
+
+        mOnError(mBridge, aError);
+    }
+
+    void OnDone(chip::app::ReadClient *) override {
+        // Can we check the ReadClient's IsReadType here to decide whether to
+        // delete mBridge?
+        if (mReadClient->IsSubscriptionType()) {
+            delete mBridge;
+        }
+        chip::Platform::Delete(this);
+    }
+
+    void OnSubscriptionEstablished(chip::SubscriptionId aSubscriptionId) override
+    {
+        BridgeType::OnSubscriptionEstablished(mBridge);
+    }
+
+    // The superclass OnResubscriptionNeeded is fine for our purposes.
+
+    void OnDeallocatePaths(chip::app::ReadPrepareParams && aReadPrepareParams) override
+    {
+        VerifyOrDie(aReadPrepareParams.mAttributePathParamsListSize == 1 &&
+                    aReadPrepareParams.mpAttributePathParamsList != nullptr);
+        chip::Platform::Delete<chip::app::AttributePathParams>(aReadPrepareParams.mpAttributePathParamsList);
+
+        if (aReadPrepareParams.mDataVersionFilterListSize == 1 && aReadPrepareParams.mpDataVersionFilterList != nullptr)
+        {
+            chip::Platform::Delete<chip::app::DataVersionFilter>(aReadPrepareParams.mpDataVersionFilterList);
+        }
+    }
+
+    BridgeType * mBridge;
+
+    chip::ClusterId mClusterID;
+    chip::AttributeId mAttributeID;
+    typename BridgeType::SuccessCallbackType mOnAttributeReport;
+    DefaultFailureCallbackType mOnError;
+    chip::app::BufferedReadCallback mBufferedReadAdapter;
+    chip::Platform::UniquePtr<chip::app::ReadClient> mReadClient;
+    // For reads, we ensure that we make only one data/error callback to our consumer.
+    bool mCalledCallback = false;
+};
+
+template<typename SubscriptionBridgeType, typename AttributeObjCType, typename DecodableAttributeType>
 static void SubscribeAttribute(MTRSubscribeParams * _Nonnull params, MTRSubscriptionEstablishedHandler _Nullable subscriptionEstablished, void (^reportHandler)(AttributeObjCType * _Nullable value, NSError * _Nullable error), dispatch_queue_t callbackQueue, MTRBaseDevice * device, chip::EndpointId endpoint, chip::ClusterId clusterID, chip::AttributeId attributeID)
 {
     // Make a copy of params before we go async.
@@ -33,32 +138,44 @@ static void SubscribeAttribute(MTRSubscribeParams * _Nonnull params, MTRSubscrip
           not great from a type-safety perspective, of course. }}
       reportHandler,
       ^(ExchangeManager & exchangeManager, const SessionHandle & session, Cancelable * success, Cancelable * failure) {
-          if (!params.resubscribeIfLost) {
-              // We don't support disabling auto-resubscribe.
-              return CHIP_ERROR_INVALID_ARGUMENT;
-          }
           auto successFn = Callback<typename SubscriptionBridgeType::SuccessCallbackType>::FromCancelable(success);
           auto successCb = successFn->mCall;
           auto failureFn = Callback<DefaultFailureCallbackType>::FromCancelable(failure);
           auto failureCb = failureFn->mCall;
-          auto context = successFn->mContext;
+
+          auto readPaths = chip::Platform::MakeUnique<chip::app::AttributePathParams>(endpoint, clusterID, attributeID);
+          VerifyOrReturnError(readPaths != nullptr, CHIP_ERROR_NO_MEMORY);
+
+          chip::app::ReadPrepareParams subscribeParams(session);
+          subscribeParams.mpAttributePathParamsList    = readPaths.get();
+          subscribeParams.mAttributePathParamsListSize = 1;
+          subscribeParams.mMinIntervalFloorSeconds = params.minInterval.unsignedShortValue;
+          subscribeParams.mMaxIntervalCeilingSeconds = params.maxInterval.unsignedShortValue;
+          subscribeParams.mKeepSubscriptions = !params.replaceExistingSubscriptions;
+          subscribeParams.mIsFabricFiltered = params.filterByFabric;
 
           SubscriptionBridgeType * innerCallbackBridge = callbackBridge;
-          auto onReportCb = [context, successCb](const chip::app::ConcreteAttributePath & aPath, const AttributeDecodableType & aData) {
-              successCb(context, aData);
-          };
-          auto onFailureCb = [context, failureCb](const chip::app::ConcreteAttributePath * aPath, CHIP_ERROR aError) {
-              failureCb(context, aError);
-          };
-          auto onSubscriptionEstablishedCb = [context](const chip::app::ReadClient & readClient) {
-              SubscriptionBridgeType::OnSubscriptionEstablished(context);
-          };
-          return chip::Controller::SubscribeAttribute<AttributeDecodableType>(&exchangeManager, session, endpoint, clusterID, attributeID, onReportCb, onFailureCb, params.minInterval.unsignedShortValue, params.maxInterval.unsignedShortValue, onSubscriptionEstablishedCb, nullptr,
-              params.filterByFabric,
-              !params.replaceExistingSubscriptions,
-              chip::NullOptional,
-              [innerCallbackBridge](void) { delete innerCallbackBridge; }
-          );
+          auto callback = chip::Platform::MakeUnique<AttributeCallback<SubscriptionBridgeType, DecodableAttributeType>>(innerCallbackBridge, successCb, failureCb, clusterID, attributeID);
+          VerifyOrReturnError(callback != nullptr, CHIP_ERROR_NO_MEMORY);
+
+          auto readClient =
+              chip::Platform::MakeUnique<chip::app::ReadClient>(chip::app::InteractionModelEngine::GetInstance(), &exchangeManager, callback->GetBufferedCallback(), chip::app::ReadClient::InteractionType::Subscribe);
+          VerifyOrReturnError(readClient != nullptr, CHIP_ERROR_NO_MEMORY);
+
+          CHIP_ERROR err;
+          if (params.resubscribeIfLost) {
+              readPaths.release();
+
+              err = readClient->SendAutoResubscribeRequest(std::move(subscribeParams));
+          } else {
+              err = readClient->SendRequest(subscribeParams);
+          }
+          ReturnErrorOnFailure(err);
+
+          callback->AdoptReadClient(std::move(readClient));
+          callback.release();
+
+          return CHIP_NO_ERROR;
       }, subscriptionEstablished);
 }
 
