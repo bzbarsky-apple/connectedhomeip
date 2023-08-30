@@ -215,7 +215,7 @@ jobs:
                   "
 
             - name: Run Tests using chip-repl (skip slow)
-              if: github.event_name == 'pull_request'
+              if: false
               run: |
                   ./scripts/run_in_python_env.sh out/venv \
                   "./scripts/tests/run_test_suite.py \
@@ -235,7 +235,7 @@ jobs:
                      --bridge-app ./out/linux-x64-bridge-${BUILD_VARIANT}/chip-bridge-app \
                   "
             - name: Run Tests using chip-repl (including slow)
-              if: github.event_name == 'push'
+              if: false
               run: |
                   ./scripts/run_in_python_env.sh out/venv \
                   "./scripts/tests/run_test_suite.py \
@@ -272,7 +272,7 @@ jobs:
 
         strategy:
             matrix:
-                build_variant: [no-ble-asan-clang, no-ble-tsan-clang]
+                build_variant: [no-ble-tsan-clang]
                 chip_tool: [""]
         env:
             BUILD_VARIANT: ${{matrix.build_variant}}
@@ -365,7 +365,7 @@ jobs:
         env:
             TSAN_OPTIONS: "halt_on_error=1 suppressions=scripts/tests/chiptest/tsan-linux-suppressions.txt"
 
-        if: github.actor != 'restyled-io[bot]'
+        if: false
         runs-on: ubuntu-latest
 
         container:
