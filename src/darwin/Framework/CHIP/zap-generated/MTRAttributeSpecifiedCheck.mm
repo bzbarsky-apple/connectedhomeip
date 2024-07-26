@@ -6657,6 +6657,12 @@ static BOOL AttributeIsSpecifiedInUnitTestingCluster(AttributeId aAttributeId)
     case Attributes::ClusterErrorBoolean::Id: {
         return YES;
     }
+    case Attributes::GlobalEnum::Id: {
+        return YES;
+    }
+    case Attributes::GlobalStruct::Id: {
+        return YES;
+    }
     case Attributes::Unsupported::Id: {
         return YES;
     }
@@ -6760,6 +6766,12 @@ static BOOL AttributeIsSpecifiedInUnitTestingCluster(AttributeId aAttributeId)
         return YES;
     }
     case Attributes::WriteOnlyInt8u::Id: {
+        return YES;
+    }
+    case Attributes::NullableGlobalEnum::Id: {
+        return YES;
+    }
+    case Attributes::NullableGlobalStruct::Id: {
         return YES;
     }
     case Attributes::GeneratedCommandList::Id: {

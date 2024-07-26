@@ -20823,6 +20823,30 @@ public class ClusterInfoMapping {
     }
   }
 
+  public static class DelegatedUnitTestingClusterGlobalEchoResponseCallback implements ChipClusters.UnitTestingCluster.GlobalEchoResponseCallback, DelegatedClusterCallback {
+    private ClusterCommandCallback callback;
+    @Override
+    public void setCallbackDelegate(ClusterCommandCallback callback) {
+      this.callback = callback;
+    }
+
+    @Override
+    public void onSuccess(Object field1, Object field2) {
+      Map<CommandResponseInfo, Object> responseValues = new LinkedHashMap<>();
+
+      CommandResponseInfo field1ResponseValue = new CommandResponseInfo("field1", "Object");
+      responseValues.put(field1ResponseValue, field1);
+      CommandResponseInfo field2ResponseValue = new CommandResponseInfo("field2", "Object");
+      responseValues.put(field2ResponseValue, field2);
+      callback.onSuccess(responseValues);
+    }
+
+    @Override
+    public void onError(Exception error) {
+      callback.onFailure(error);
+    }
+  }
+
   public static class DelegatedUnitTestingClusterTestDifferentVendorMeiResponseCallback implements ChipClusters.UnitTestingCluster.TestDifferentVendorMeiResponseCallback, DelegatedClusterCallback {
     private ClusterCommandCallback callback;
     @Override
@@ -20984,6 +21008,48 @@ public class ClusterInfoMapping {
       Map<CommandResponseInfo, Object> responseValues = new LinkedHashMap<>();
       CommandResponseInfo commandResponseInfo = new CommandResponseInfo("valueList", "List<ChipStructs.UnitTestingClusterTestFabricScoped>");
       responseValues.put(commandResponseInfo, valueList);
+      callback.onSuccess(responseValues);
+    }
+
+    @Override
+    public void onError(Exception ex) {
+      callback.onFailure(ex);
+    }
+  }
+
+  public static class DelegatedUnitTestingClusterGlobalEnumAttributeCallback implements ChipClusters.UnitTestingCluster.GlobalEnumAttributeCallback, DelegatedClusterCallback {
+    private ClusterCommandCallback callback;
+    @Override
+    public void setCallbackDelegate(ClusterCommandCallback callback) {
+      this.callback = callback;
+    }
+
+    @Override
+    public void onSuccess(Object value) {
+      Map<CommandResponseInfo, Object> responseValues = new LinkedHashMap<>();
+      CommandResponseInfo commandResponseInfo = new CommandResponseInfo("value", "Object");
+      responseValues.put(commandResponseInfo, value);
+      callback.onSuccess(responseValues);
+    }
+
+    @Override
+    public void onError(Exception ex) {
+      callback.onFailure(ex);
+    }
+  }
+
+  public static class DelegatedUnitTestingClusterGlobalStructAttributeCallback implements ChipClusters.UnitTestingCluster.GlobalStructAttributeCallback, DelegatedClusterCallback {
+    private ClusterCommandCallback callback;
+    @Override
+    public void setCallbackDelegate(ClusterCommandCallback callback) {
+      this.callback = callback;
+    }
+
+    @Override
+    public void onSuccess(Object value) {
+      Map<CommandResponseInfo, Object> responseValues = new LinkedHashMap<>();
+      CommandResponseInfo commandResponseInfo = new CommandResponseInfo("value", "Object");
+      responseValues.put(commandResponseInfo, value);
       callback.onSuccess(responseValues);
     }
 
@@ -21676,6 +21742,48 @@ public class ClusterInfoMapping {
     public void onSuccess(@Nullable Integer value) {
       Map<CommandResponseInfo, Object> responseValues = new LinkedHashMap<>();
       CommandResponseInfo commandResponseInfo = new CommandResponseInfo("value", "Integer");
+      responseValues.put(commandResponseInfo, value);
+      callback.onSuccess(responseValues);
+    }
+
+    @Override
+    public void onError(Exception ex) {
+      callback.onFailure(ex);
+    }
+  }
+
+  public static class DelegatedUnitTestingClusterNullableGlobalEnumAttributeCallback implements ChipClusters.UnitTestingCluster.NullableGlobalEnumAttributeCallback, DelegatedClusterCallback {
+    private ClusterCommandCallback callback;
+    @Override
+    public void setCallbackDelegate(ClusterCommandCallback callback) {
+      this.callback = callback;
+    }
+
+    @Override
+    public void onSuccess(@Nullable Object value) {
+      Map<CommandResponseInfo, Object> responseValues = new LinkedHashMap<>();
+      CommandResponseInfo commandResponseInfo = new CommandResponseInfo("value", "Object");
+      responseValues.put(commandResponseInfo, value);
+      callback.onSuccess(responseValues);
+    }
+
+    @Override
+    public void onError(Exception ex) {
+      callback.onFailure(ex);
+    }
+  }
+
+  public static class DelegatedUnitTestingClusterNullableGlobalStructAttributeCallback implements ChipClusters.UnitTestingCluster.NullableGlobalStructAttributeCallback, DelegatedClusterCallback {
+    private ClusterCommandCallback callback;
+    @Override
+    public void setCallbackDelegate(ClusterCommandCallback callback) {
+      this.callback = callback;
+    }
+
+    @Override
+    public void onSuccess(@Nullable Object value) {
+      Map<CommandResponseInfo, Object> responseValues = new LinkedHashMap<>();
+      CommandResponseInfo commandResponseInfo = new CommandResponseInfo("value", "Object");
       responseValues.put(commandResponseInfo, value);
       callback.onSuccess(responseValues);
     }
@@ -29463,6 +29571,30 @@ public class ClusterInfoMapping {
         unitTestingstringEchoRequestCommandParams
       );
     unitTestingClusterInteractionInfoMap.put("stringEchoRequest", unitTestingstringEchoRequestInteractionInfo);
+
+    Map<String, CommandParameterInfo> unitTestingglobalEchoRequestCommandParams = new LinkedHashMap<String, CommandParameterInfo>();
+
+    CommandParameterInfo unitTestingglobalEchoRequestfield1CommandParameterInfo = new CommandParameterInfo("field1", Object.class, Object.class);
+    unitTestingglobalEchoRequestCommandParams.put("field1",unitTestingglobalEchoRequestfield1CommandParameterInfo);
+
+    CommandParameterInfo unitTestingglobalEchoRequestfield2CommandParameterInfo = new CommandParameterInfo("field2", Object.class, Object.class);
+    unitTestingglobalEchoRequestCommandParams.put("field2",unitTestingglobalEchoRequestfield2CommandParameterInfo);
+    InteractionInfo unitTestingglobalEchoRequestInteractionInfo = new InteractionInfo(
+      (cluster, callback, commandArguments) -> {
+        ((ChipClusters.UnitTestingCluster) cluster)
+          .globalEchoRequest((ChipClusters.UnitTestingCluster.GlobalEchoResponseCallback) callback
+           , (Object)
+             commandArguments.get("field1")
+
+           , (Object)
+             commandArguments.get("field2")
+
+            );
+        },
+        () -> new DelegatedUnitTestingClusterGlobalEchoResponseCallback(),
+        unitTestingglobalEchoRequestCommandParams
+      );
+    unitTestingClusterInteractionInfoMap.put("globalEchoRequest", unitTestingglobalEchoRequestInteractionInfo);
 
     Map<String, CommandParameterInfo> unitTestingtestDifferentVendorMeiRequestCommandParams = new LinkedHashMap<String, CommandParameterInfo>();
 

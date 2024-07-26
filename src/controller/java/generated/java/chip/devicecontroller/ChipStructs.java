@@ -12671,6 +12671,7 @@ public static class UnitTestingClusterSimpleStruct {
   public Integer f;
   public Float g;
   public Double h;
+  public Optional<Object> i;
   private static final long A_ID = 0L;
   private static final long B_ID = 1L;
   private static final long C_ID = 2L;
@@ -12679,6 +12680,7 @@ public static class UnitTestingClusterSimpleStruct {
   private static final long F_ID = 5L;
   private static final long G_ID = 6L;
   private static final long H_ID = 7L;
+  private static final long I_ID = 8L;
 
   public UnitTestingClusterSimpleStruct(
     Integer a,
@@ -12688,7 +12690,8 @@ public static class UnitTestingClusterSimpleStruct {
     String e,
     Integer f,
     Float g,
-    Double h
+    Double h,
+    Optional<Object> i
   ) {
     this.a = a;
     this.b = b;
@@ -12698,6 +12701,7 @@ public static class UnitTestingClusterSimpleStruct {
     this.f = f;
     this.g = g;
     this.h = h;
+    this.i = i;
   }
 
   public StructType encodeTlv() {
@@ -12710,6 +12714,7 @@ public static class UnitTestingClusterSimpleStruct {
     values.add(new StructElement(F_ID, new UIntType(f)));
     values.add(new StructElement(G_ID, new FloatType(g)));
     values.add(new StructElement(H_ID, new DoubleType(h)));
+    values.add(new StructElement(I_ID, i.<BaseTLVType>map((nonOptionali) -> new AnyType(nonOptionali)).orElse(new EmptyType())));
 
     return new StructType(values);
   }
@@ -12726,6 +12731,7 @@ public static class UnitTestingClusterSimpleStruct {
     Integer f = null;
     Float g = null;
     Double h = null;
+    Optional<Object> i = Optional.empty();
     for (StructElement element: ((StructType)tlvValue).value()) {
       if (element.contextTagNum() == A_ID) {
         if (element.value(BaseTLVType.class).type() == TLVType.UInt) {
@@ -12767,6 +12773,11 @@ public static class UnitTestingClusterSimpleStruct {
           DoubleType castingValue = element.value(DoubleType.class);
           h = castingValue.value(Double.class);
         }
+      } else if (element.contextTagNum() == I_ID) {
+        if (element.value(BaseTLVType.class).type() == TLVType.Any) {
+          AnyType castingValue = element.value(AnyType.class);
+          i = Optional.of(castingValue.value(Object.class));
+        }
       }
     }
     return new UnitTestingClusterSimpleStruct(
@@ -12777,7 +12788,8 @@ public static class UnitTestingClusterSimpleStruct {
       e,
       f,
       g,
-      h
+      h,
+      i
     );
   }
 
@@ -12808,6 +12820,9 @@ public static class UnitTestingClusterSimpleStruct {
     output.append("\n");
     output.append("\th: ");
     output.append(h);
+    output.append("\n");
+    output.append("\ti: ");
+    output.append(i);
     output.append("\n");
     output.append("}\n");
     return output.toString();
@@ -13179,18 +13194,22 @@ public static class UnitTestingClusterNestedStruct {
   public Integer a;
   public Boolean b;
   public ChipStructs.UnitTestingClusterSimpleStruct c;
+  public Optional<Object> d;
   private static final long A_ID = 0L;
   private static final long B_ID = 1L;
   private static final long C_ID = 2L;
+  private static final long D_ID = 3L;
 
   public UnitTestingClusterNestedStruct(
     Integer a,
     Boolean b,
-    ChipStructs.UnitTestingClusterSimpleStruct c
+    ChipStructs.UnitTestingClusterSimpleStruct c,
+    Optional<Object> d
   ) {
     this.a = a;
     this.b = b;
     this.c = c;
+    this.d = d;
   }
 
   public StructType encodeTlv() {
@@ -13198,6 +13217,7 @@ public static class UnitTestingClusterNestedStruct {
     values.add(new StructElement(A_ID, new UIntType(a)));
     values.add(new StructElement(B_ID, new BooleanType(b)));
     values.add(new StructElement(C_ID, c.encodeTlv()));
+    values.add(new StructElement(D_ID, d.<BaseTLVType>map((nonOptionald) -> new AnyType(nonOptionald)).orElse(new EmptyType())));
 
     return new StructType(values);
   }
@@ -13209,6 +13229,7 @@ public static class UnitTestingClusterNestedStruct {
     Integer a = null;
     Boolean b = null;
     ChipStructs.UnitTestingClusterSimpleStruct c = null;
+    Optional<Object> d = Optional.empty();
     for (StructElement element: ((StructType)tlvValue).value()) {
       if (element.contextTagNum() == A_ID) {
         if (element.value(BaseTLVType.class).type() == TLVType.UInt) {
@@ -13225,12 +13246,18 @@ public static class UnitTestingClusterNestedStruct {
           StructType castingValue = element.value(StructType.class);
           c = ChipStructs.UnitTestingClusterSimpleStruct.decodeTlv(castingValue);
         }
+      } else if (element.contextTagNum() == D_ID) {
+        if (element.value(BaseTLVType.class).type() == TLVType.Any) {
+          AnyType castingValue = element.value(AnyType.class);
+          d = Optional.of(castingValue.value(Object.class));
+        }
       }
     }
     return new UnitTestingClusterNestedStruct(
       a,
       b,
-      c
+      c,
+      d
     );
   }
 
@@ -13246,6 +13273,9 @@ public static class UnitTestingClusterNestedStruct {
     output.append("\n");
     output.append("\tc: ");
     output.append(c);
+    output.append("\n");
+    output.append("\td: ");
+    output.append(d);
     output.append("\n");
     output.append("}\n");
     return output.toString();
