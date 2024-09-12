@@ -131,6 +131,8 @@
 		510470FB2A2F7DF60053EA7E /* MTRBackwardsCompatShims.mm in Sources */ = {isa = PBXBuildFile; fileRef = 510470FA2A2F7DF60053EA7E /* MTRBackwardsCompatShims.mm */; };
 		510A07492A685D3900A9241C /* Matter.apinotes in Headers */ = {isa = PBXBuildFile; fileRef = 510A07482A685D3900A9241C /* Matter.apinotes */; settings = {ATTRIBUTES = (Public, ); }; };
 		510CECA8297F72970064E0B3 /* MTROperationalCertificateIssuerTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 510CECA6297F72470064E0B3 /* MTROperationalCertificateIssuerTests.m */; };
+		5114A83A2C935DF700F7A4F1 /* MTRDevice.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5114A8392C935DF700F7A4F1 /* MTRDevice.swift */; };
+		5114A83C2C935FA700F7A4F1 /* MTRCluster.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5114A83B2C935FA700F7A4F1 /* MTRCluster.swift */; };
 		5117DD3829A931AE00FFA1AA /* MTROperationalBrowser.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5117DD3629A931AD00FFA1AA /* MTROperationalBrowser.mm */; };
 		5117DD3929A931AE00FFA1AA /* MTROperationalBrowser.h in Headers */ = {isa = PBXBuildFile; fileRef = 5117DD3729A931AE00FFA1AA /* MTROperationalBrowser.h */; };
 		511913FB28C100EF009235E9 /* MTRBaseSubscriptionCallback.mm in Sources */ = {isa = PBXBuildFile; fileRef = 511913F928C100EF009235E9 /* MTRBaseSubscriptionCallback.mm */; };
@@ -567,6 +569,8 @@
 		510470FA2A2F7DF60053EA7E /* MTRBackwardsCompatShims.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = MTRBackwardsCompatShims.mm; sourceTree = "<group>"; };
 		510A07482A685D3900A9241C /* Matter.apinotes */ = {isa = PBXFileReference; lastKnownFileType = text.apinotes; name = Matter.apinotes; path = CHIP/Matter.apinotes; sourceTree = "<group>"; };
 		510CECA6297F72470064E0B3 /* MTROperationalCertificateIssuerTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MTROperationalCertificateIssuerTests.m; sourceTree = "<group>"; };
+		5114A8392C935DF700F7A4F1 /* MTRDevice.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MTRDevice.swift; sourceTree = "<group>"; };
+		5114A83B2C935FA700F7A4F1 /* MTRCluster.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MTRCluster.swift; sourceTree = "<group>"; };
 		5117DD3629A931AD00FFA1AA /* MTROperationalBrowser.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = MTROperationalBrowser.mm; sourceTree = "<group>"; };
 		5117DD3729A931AE00FFA1AA /* MTROperationalBrowser.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MTROperationalBrowser.h; sourceTree = "<group>"; };
 		511913F928C100EF009235E9 /* MTRBaseSubscriptionCallback.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = MTRBaseSubscriptionCallback.mm; sourceTree = "<group>"; };
@@ -1314,6 +1318,7 @@
 				1ED276E326C5832500547A89 /* MTRCluster.h */,
 				7596A84E2877E6A9004DAE0E /* MTRCluster_Internal.h */,
 				1ED276E126C5812A00547A89 /* MTRCluster.mm */,
+				5114A83B2C935FA700F7A4F1 /* MTRCluster.swift */,
 				93E610A92B626E290077F02A /* MTRClusterNames.h */,
 				5ACDDD7927CD129700EFD68A /* MTRClusterStateCacheContainer.h */,
 				5ACDDD7B27CD14AF00EFD68A /* MTRClusterStateCacheContainer_Internal.h */,
@@ -1333,6 +1338,7 @@
 				7596A84A287636C1004DAE0E /* MTRDevice_Internal.h */,
 				7596A84228762729004DAE0E /* MTRDevice.h */,
 				7596A84328762729004DAE0E /* MTRDevice.mm */,
+				5114A8392C935DF700F7A4F1 /* MTRDevice.swift */,
 				9B5CCB5A2C6EC890009DD99B /* MTRDevice_XPC.h */,
 				D4288E862C8A273F002FEC53 /* MTRDevice_XPC_Internal.h */,
 				9B5CCB5B2C6EC890009DD99B /* MTRDevice_XPC.mm */,
@@ -1825,6 +1831,7 @@
 					};
 					B202528C2459E34F00F97062 = {
 						CreatedOnToolsVersion = 11.4.1;
+						LastSwiftMigration = 1530;
 					};
 					B20252952459E34F00F97062 = {
 						CreatedOnToolsVersion = 11.4.1;
@@ -2008,7 +2015,9 @@
 				9B5CCB602C6EE29E009DD99B /* MTRDeviceControllerXPCParameters.mm in Sources */,
 				75B765C32A1D82D30014719B /* MTRAttributeSpecifiedCheck.mm in Sources */,
 				AF5F90FF2878D351005503FA /* MTROTAProviderDelegateBridge.mm in Sources */,
+				5114A83C2C935FA700F7A4F1 /* MTRCluster.swift in Sources */,
 				516415FF2B6B132200D5CE11 /* DataModelHandler.cpp in Sources */,
+				5114A83A2C935DF700F7A4F1 /* MTRDevice.swift in Sources */,
 				75139A6F2B7FE5E900E3A919 /* MTRDeviceControllerLocalTestStorage.mm in Sources */,
 				51E95DFC2A78443C00A434F0 /* MTRSessionResumptionStorageBridge.mm in Sources */,
 				514C79ED2B62ADCD00DD6D7B /* ember-compatibility-functions.cpp in Sources */,
@@ -2362,6 +2371,7 @@
 		BA09EB742474881D00605257 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
 				DEFINES_MODULE = YES;
 				DEVELOPMENT_TEAM = "";
@@ -2421,6 +2431,8 @@
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SDKROOT = iphoneos;
 				STRIP_STYLE = "non-global";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
 				SYSTEM_HEADER_SEARCH_PATHS = (
 					"$(TEMP_DIR)/out/gen/include",
 					"$(CHIP_ROOT)/src/darwin/Framework/CHIP/",
@@ -2441,6 +2453,7 @@
 		BA09EB752474881D00605257 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = "";
@@ -2532,6 +2545,7 @@
 		BA09EB782474882200605257 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
 				DEFINES_MODULE = YES;
 				DEVELOPMENT_TEAM = "";
@@ -2593,6 +2607,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SDKROOT = iphoneos;
 				STRIP_STYLE = "non-global";
+				SWIFT_VERSION = 5.0;
 				SYSTEM_HEADER_SEARCH_PATHS = (
 					"$(TEMP_DIR)/out/gen/include",
 					"$(CHIP_ROOT)/src/darwin/Framework/CHIP/",
@@ -2613,6 +2628,7 @@
 		BA09EB792474882200605257 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = "";

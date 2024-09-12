@@ -185,7 +185,7 @@ class MTRSwiftDeviceTests : XCTestCase {
     {
         let device = MTRDevice(nodeID: DeviceConstants.deviceID as NSNumber, controller:sController!)
         let queue = DispatchQueue.main
-        
+
         // Given reachable state becomes true before underlying OnSubscriptionEstablished callback, this expectation is necessary but
         // not sufficient as a mark to the end of reports
         let subscriptionExpectation = expectation(description: "Subscription has been set up")
@@ -486,10 +486,14 @@ class MTRSwiftDeviceTests : XCTestCase {
         let device = MTRDevice(nodeID: DeviceConstants.deviceID as NSNumber, controller:sController!)
         let queue = DispatchQueue.main
         
+        XCTAssertEqual(device.nodeID, UInt64(DeviceConstants.deviceID));
+        
         let opcredsCluster = MTRClusterOperationalCredentials(device: device, endpointID: 0, queue: queue)!
         let onOffCluster = MTRClusterOnOff(device: device, endpointID: 1, queue: queue)!
         let badOnOffCluster = MTRClusterOnOff(device: device, endpointID: 0, queue: queue)!
         
+        XCTAssertEqual(onOffCluster.endpointID, 1);
+
         // Ensure our existing fabric label is not "Test".  This uses a "base"
         // cluster to ensure read-through to the other side.
         let baseOpCredsCluster = MTRBaseClusterOperationalCredentials(device: sConnectedDevice!, endpointID: 0, queue: queue)!
