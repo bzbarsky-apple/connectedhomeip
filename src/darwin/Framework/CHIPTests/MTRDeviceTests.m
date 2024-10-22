@@ -4467,63 +4467,59 @@ static void (^globalReportHandler)(id _Nullable values, NSError * _Nullable erro
     }
 }
 
-- (void)test040_AttributeValueEquivalence
+- (void)test040_AttributeValueExpectationSatisfaction
 {
-    // This shouldn't really need an MTRDevice instance, but for convenience the
-    // functionality we are testing is an instance method on MTRDevice.
     __auto_type * device = [MTRDevice deviceWithNodeID:kDeviceId deviceController:sController];
 
     __auto_type * testData = @[
         @{
-            // Check that two equal unsigned integers are equivalent.
-            @"first" : @ {
+            @"expected" : @ {
                 MTRTypeKey : MTRUnsignedIntegerValueType,
                 MTRValueKey : @(7),
             },
-            @"second" : @ {
+            @"observed" : @ {
                 MTRTypeKey : MTRUnsignedIntegerValueType,
                 MTRValueKey : @(7)
             },
+            // Equal unsigned integer should satisfy expectation.
             @"expectedComparison" : @(YES),
         },
         @{
-            // Check that two unequal unsigned integers are equivalent.
-            @"first" : @ {
+            @"expected" : @ {
                 MTRTypeKey : MTRUnsignedIntegerValueType,
                 MTRValueKey : @(7),
             },
-            @"second" : @ {
+            @"observed" : @ {
                 MTRTypeKey : MTRUnsignedIntegerValueType,
                 MTRValueKey : @(9),
             },
+            // Unequal unsigned integer should not satisfy expectation
             @"expectedComparison" : @(NO),
         },
         @{
-            // Check that a signed and unsigned integer are not equivalent, even
-            // if the value is the same.
-            @"first" : @ {
+            @"expected" : @ {
                 MTRTypeKey : MTRUnsignedIntegerValueType,
                 MTRValueKey : @(7),
             },
-            @"second" : @ {
+            @"observed" : @ {
                 MTRTypeKey : MTRSignedIntegerValueType,
                 MTRValueKey : @(7),
             },
+            // A signed integer does not satisfy expectation for an unsigned integer.
             @"expectedComparison" : @(NO),
         },
         @{
-            // Check that null is equivalent to null.
-            @"first" : @ {
+            @"expected" : @ {
                 MTRTypeKey : MTRNullValueType,
             },
-            @"second" : @ {
+            @"observed" : @ {
                 MTRTypeKey : MTRNullValueType,
             },
+            // Null satisfies expectation for null.
             @"expectedComparison" : @(YES),
         },
         @{
-            // Check that two different-length arrays are not equivalent.
-            @"first" : @ {
+            @"expected" : @ {
                 MTRTypeKey : MTRArrayValueType,
                 MTRValueKey : @[
                     @{
@@ -4540,7 +4536,7 @@ static void (^globalReportHandler)(id _Nullable values, NSError * _Nullable erro
                     },
                 ],
             },
-            @"second" : @ {
+            @"observed" : @ {
                 MTRTypeKey : MTRArrayValueType,
                 MTRValueKey : @[
                     @{
@@ -4563,11 +4559,34 @@ static void (^globalReportHandler)(id _Nullable values, NSError * _Nullable erro
                     },
                 ],
             },
+            // A longer list does not satisfy expectation for a shorter array.
             @"expectedComparison" : @(NO),
         },
         @{
-            // Check that identical arrays are equivalent.
-            @"first" : @ {
+            @"expected" : @ {
+                MTRTypeKey : MTRArrayValueType,
+                MTRValueKey : @[
+                    @{
+                        MTRDataKey : @ {
+                            MTRTypeKey : MTRUnsignedIntegerValueType,
+                            MTRValueKey : @(5),
+                        }
+                    },
+                    @{
+                        MTRDataKey : @ {
+                            MTRTypeKey : MTRUnsignedIntegerValueType,
+                            MTRValueKey : @(6),
+                        }
+                    },
+                    @{
+                        MTRDataKey : @ {
+                            MTRTypeKey : MTRUnsignedIntegerValueType,
+                            MTRValueKey : @(7),
+                        }
+                    },
+                ],
+            },
+            @"observed" : @ {
                 MTRTypeKey : MTRArrayValueType,
                 MTRValueKey : @[
                     @{
@@ -4584,111 +4603,87 @@ static void (^globalReportHandler)(id _Nullable values, NSError * _Nullable erro
                     },
                 ],
             },
-            @"second" : @ {
-                MTRTypeKey : MTRArrayValueType,
-                MTRValueKey : @[
-                    @{
-                        MTRDataKey : @ {
-                            MTRTypeKey : MTRUnsignedIntegerValueType,
-                            MTRValueKey : @(5),
-                        }
-                    },
-                    @{
-                        MTRDataKey : @ {
-                            MTRTypeKey : MTRUnsignedIntegerValueType,
-                            MTRValueKey : @(6),
-                        }
-                    },
-                ],
-            },
-            @"expectedComparison" : @(YES),
-        },
-        @{
-            // Check that arrays with the same entries in different orders are
-            // not equivalent.
-            @"first" : @ {
-                MTRTypeKey : MTRArrayValueType,
-                MTRValueKey : @[
-                    @{
-                        MTRDataKey : @ {
-                            MTRTypeKey : MTRUnsignedIntegerValueType,
-                            MTRValueKey : @(5),
-                        }
-                    },
-                    @{
-                        MTRDataKey : @ {
-                            MTRTypeKey : MTRUnsignedIntegerValueType,
-                            MTRValueKey : @(6),
-                        }
-                    },
-                ],
-            },
-            @"second" : @ {
-                MTRTypeKey : MTRArrayValueType,
-                MTRValueKey : @[
-                    @{
-                        MTRDataKey : @ {
-                            MTRTypeKey : MTRUnsignedIntegerValueType,
-                            MTRValueKey : @(6),
-                        }
-                    },
-                    @{
-                        MTRDataKey : @ {
-                            MTRTypeKey : MTRUnsignedIntegerValueType,
-                            MTRValueKey : @(5),
-                        }
-                    },
-                ],
-            },
+            // A shorter list does not satisfy expectation for a longer array.
             @"expectedComparison" : @(NO),
         },
         @{
-            // Check that two structs that have the same fields in the same
-            // order are equivalent.
-            @"first" : @ {
-                MTRTypeKey : MTRStructureValueType,
+            @"expected" : @ {
+                MTRTypeKey : MTRArrayValueType,
                 MTRValueKey : @[
                     @{
-                        MTRContextTagKey : @(1),
+                        MTRDataKey : @ {
+                            MTRTypeKey : MTRUnsignedIntegerValueType,
+                            MTRValueKey : @(5),
+                        }
+                    },
+                    @{
                         MTRDataKey : @ {
                             MTRTypeKey : MTRUnsignedIntegerValueType,
                             MTRValueKey : @(6),
-                        },
-                    },
-                    @{
-                        MTRContextTagKey : @(2),
-                        MTRDataKey : @ {
-                            MTRTypeKey : MTRUTF8StringValueType,
-                            MTRValueKey : @("abc"),
-                        },
+                        }
                     },
                 ],
             },
-            @"second" : @ {
-                MTRTypeKey : MTRStructureValueType,
+            @"observed" : @ {
+                MTRTypeKey : MTRArrayValueType,
                 MTRValueKey : @[
                     @{
-                        MTRContextTagKey : @(1),
+                        MTRDataKey : @ {
+                            MTRTypeKey : MTRUnsignedIntegerValueType,
+                            MTRValueKey : @(5),
+                        }
+                    },
+                    @{
                         MTRDataKey : @ {
                             MTRTypeKey : MTRUnsignedIntegerValueType,
                             MTRValueKey : @(6),
-                        },
-                    },
-                    @{
-                        MTRContextTagKey : @(2),
-                        MTRDataKey : @ {
-                            MTRTypeKey : MTRUTF8StringValueType,
-                            MTRValueKey : @("abc"),
-                        },
+                        }
                     },
                 ],
             },
+            // An observed array identical to an expected one satisfies the expectation.
             @"expectedComparison" : @(YES),
         },
         @{
-            // Check that two structs that have different fields in the same
-            // order are equivalent.
-            @"first" : @ {
+            @"expected" : @ {
+                MTRTypeKey : MTRArrayValueType,
+                MTRValueKey : @[
+                    @{
+                        MTRDataKey : @ {
+                            MTRTypeKey : MTRUnsignedIntegerValueType,
+                            MTRValueKey : @(5),
+                        }
+                    },
+                    @{
+                        MTRDataKey : @ {
+                            MTRTypeKey : MTRUnsignedIntegerValueType,
+                            MTRValueKey : @(6),
+                        }
+                    },
+                ],
+            },
+            @"observed" : @ {
+                MTRTypeKey : MTRArrayValueType,
+                MTRValueKey : @[
+                    @{
+                        MTRDataKey : @ {
+                            MTRTypeKey : MTRUnsignedIntegerValueType,
+                            MTRValueKey : @(6),
+                        }
+                    },
+                    @{
+                        MTRDataKey : @ {
+                            MTRTypeKey : MTRUnsignedIntegerValueType,
+                            MTRValueKey : @(5),
+                        }
+                    },
+                ],
+            },
+            // An array with entries in a different order does not satisfy the expectation.
+            @"expectedComparison" : @(NO),
+        },
+        @{
+            @"expected" : @ {
                 MTRTypeKey : MTRStructureValueType,
                 MTRValueKey : @[
                     @{
@@ -4707,7 +4702,50 @@ static void (^globalReportHandler)(id _Nullable values, NSError * _Nullable erro
                     },
                 ],
             },
-            @"second" : @ {
+            @"observed" : @ {
+                MTRTypeKey : MTRStructureValueType,
+                MTRValueKey : @[
+                    @{
+                        MTRContextTagKey : @(1),
+                        MTRDataKey : @ {
+                            MTRTypeKey : MTRUnsignedIntegerValueType,
+                            MTRValueKey : @(6),
+                        },
+                    },
+                    @{
+                        MTRContextTagKey : @(2),
+                        MTRDataKey : @ {
+                            MTRTypeKey : MTRUTF8StringValueType,
+                            MTRValueKey : @("abc"),
+                        },
+                    },
+                ],
+            },
+            // A struct that has the same fields in the same order satisfiess the
+            // expectation.
+            @"expectedComparison" : @(YES),
+        },
+        @{
+            @"expected" : @ {
+                MTRTypeKey : MTRStructureValueType,
+                MTRValueKey : @[
+                    @{
+                        MTRContextTagKey : @(1),
+                        MTRDataKey : @ {
+                            MTRTypeKey : MTRUnsignedIntegerValueType,
+                            MTRValueKey : @(6),
+                        },
+                    },
+                    @{
+                        MTRContextTagKey : @(2),
+                        MTRDataKey : @ {
+                            MTRTypeKey : MTRUTF8StringValueType,
+                            MTRValueKey : @("abc"),
+                        },
+                    },
+                ],
+            },
+            @"observed" : @ {
                 MTRTypeKey : MTRStructureValueType,
                 MTRValueKey : @[
                     @{
@@ -4726,12 +4764,12 @@ static void (^globalReportHandler)(id _Nullable values, NSError * _Nullable erro
                     },
                 ],
             },
+            // A struct that has different fields in the same order does not
+            // satisfy the expectation.
             @"expectedComparison" : @(NO),
         },
         @{
-            // Check that two structs that have the same fields in different orders
-            // are equivalent.
-            @"first" : @ {
+            @"expected" : @ {
                 MTRTypeKey : MTRStructureValueType,
                 MTRValueKey : @[
                     @{
@@ -4750,7 +4788,7 @@ static void (^globalReportHandler)(id _Nullable values, NSError * _Nullable erro
                     },
                 ],
             },
-            @"second" : @ {
+            @"observed" : @ {
                 MTRTypeKey : MTRStructureValueType,
                 MTRValueKey : @[
                     @{
@@ -4769,15 +4807,15 @@ static void (^globalReportHandler)(id _Nullable values, NSError * _Nullable erro
                     },
                 ],
             },
+            // A struct that has the same fields in a different order satisfies
+            // the expectation.
             @"expectedComparison" : @(YES),
         },
     ];
 
     for (NSDictionary * test in testData) {
-        XCTAssertEqual([device _attributeDataValue:test[@"first"] isEquivalentToDataValue:test[@"second"]], [test[@"expectedComparison"] boolValue],
-            "first: %@, second: %@", test[@"first"], test[@"second"]);
-        XCTAssertEqual([device _attributeDataValue:test[@"second"] isEquivalentToDataValue:test[@"first"]], [test[@"expectedComparison"] boolValue],
-            "first: %@, second: %@", test[@"first"], test[@"second"]);
+        XCTAssertEqual([device _attributeDataValue:test[@"observed"] satisfiesValueExpectation:test[@"expected"]], [test[@"expectedComparison"] boolValue],
+            "observed: %@, expected: %@", test[@"observed"], test[@"expected"]);
     }
 }
 
